@@ -17,6 +17,9 @@ function Run-Adapter {
    status {Get-LicenseboxStatus $c}
    sign_in {Connect-Licensebox $c -Timeout 3}
    require {$module='core';if($r.ContainsKey('module')){$module=$r.module};Assert-LicenseboxModule $c $module}
+   heartbeat {$module='core';if($r.ContainsKey('module')){$module=$r.module};Invoke-LicenseboxHeartbeat $c $module}
+   heartbeat-repeat {$module='core';if($r.ContainsKey('module')){$module=$r.module};$null=Invoke-LicenseboxHeartbeat $c $module;Invoke-LicenseboxHeartbeat $c $module}
+   heartbeat-after-require {$module='core';if($r.ContainsKey('module')){$module=$r.module};$null=Assert-LicenseboxModule $c $module;Invoke-LicenseboxHeartbeat $c $module}
    repeat {$null=Assert-LicenseboxModule $c core;Assert-LicenseboxModule $c core}
    logout {Disconnect-Licensebox $c;return $null}
    modules {Get-LicenseboxModule $c}

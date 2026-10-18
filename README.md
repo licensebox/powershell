@@ -23,3 +23,17 @@ try {
 ```
 
 Requires PowerShell 7.4+ on Linux. Import `Licensebox.psd1` from the package directory, or place its versioned module folder on `PSModulePath`. The module compiles its included C# P/Invoke definitions with `Add-Type`; it never invokes another SDK executable. All cmdlets operate in the owning runspace. Native protocol errors are in `LicenseboxException.Code` (PowerShell may wrap the exception). `Get-LicenseboxLease`, `Assert-LicenseboxModule`, `Get-LicenseboxStatus`, `Connect-Licensebox`, `Disconnect-Licensebox`, `Get-LicenseboxModule`, `Get-LicenseboxRequest`, `Request-LicenseboxAccess`, `Get-LicenseboxAccessLink`, `Add-LicenseboxUsage`, `Close-LicenseboxClient` cover the full client API. Binding/verification helpers are `Get-LicenseboxBinding`, `ConvertTo-LicenseboxBinding`, `Test-LicenseboxLease`.
+
+## Optional heartbeat checkpoints
+
+Call `Invoke-LicenseboxHeartbeat -Client $client -Module core` with a module name to force a silent server check. It returns
+`{"lease": ..., "online": true}` after contact, or `online: false` only while
+an already verified offline lease remains valid. Heartbeat never activates,
+transfers a seat or creates an installation key; sign in explicitly first.
+Explicit refusals and removed module grants stop access immediately.
+
+Background work remains opt-in. Schedule checkpoints in your application's own
+runtime/event loop and stop protected work at the last verified lease's `expires`
+time even if a renewal hangs. Use the signed `heartbeat.interval_seconds` when
+present (otherwise a 300-second interval is a reasonable default); a failed
+contact never extends the signed deadline. This SDK starts no heartbeat threads.

@@ -10,6 +10,7 @@ function New-LicenseboxClient {
 }
 function Convert-LicenseboxValue {param([System.Text.Json.JsonElement]$Value);return ,(ConvertFrom-Json -AsHashtable -NoEnumerate -InputObject $Value.GetRawText())}
 function Get-LicenseboxLease {param([Parameter(Mandatory)]$Client);Convert-LicenseboxValue $Client.Lease()}
+function Invoke-LicenseboxHeartbeat {param([Parameter(Mandatory)]$Client,[Parameter(Mandatory)][AllowEmptyString()][string]$Module);Convert-LicenseboxValue $Client.Heartbeat($Module)}
 function Assert-LicenseboxModule {param([Parameter(Mandatory)]$Client,[Parameter(Mandatory)][AllowEmptyString()][string]$Module);Convert-LicenseboxValue $Client.Require($Module)}
 function Get-LicenseboxStatus {param([Parameter(Mandatory)]$Client);Convert-LicenseboxValue $Client.Status()}
 function Connect-Licensebox {param([Parameter(Mandatory)]$Client,[double]$Timeout=0);Convert-LicenseboxValue $Client.SignIn($Timeout)}
@@ -25,4 +26,4 @@ function ConvertTo-LicenseboxBinding {param([Parameter(Mandatory)][AllowEmptyStr
 function Test-LicenseboxLease {param([Parameter(Mandatory)][AllowEmptyString()][string]$Token,[Parameter(Mandatory)][AllowEmptyString()][string]$Product,[Parameter(Mandatory)][System.Collections.IDictionary]$Keys,[Parameter(Mandatory)][double]$Now)
  $trusted=[System.Collections.Generic.Dictionary[string,string]]::new();foreach($k in $Keys.Keys){$trusted.Add([string]$k,[string]$Keys[$k])};Convert-LicenseboxValue ([Licensebox.PowerShellNative.Client]::VerifyLease($Token,$Product,$trusted,$Now))
 }
-Export-ModuleMember -Function New-LicenseboxClient,Get-LicenseboxLease,Assert-LicenseboxModule,Get-LicenseboxStatus,Connect-Licensebox,Disconnect-Licensebox,Get-LicenseboxModule,Get-LicenseboxRequest,Request-LicenseboxAccess,Get-LicenseboxAccessLink,Add-LicenseboxUsage,Close-LicenseboxClient,Get-LicenseboxBinding,ConvertTo-LicenseboxBinding,Test-LicenseboxLease
+Export-ModuleMember -Function Invoke-LicenseboxHeartbeat,New-LicenseboxClient,Get-LicenseboxLease,Assert-LicenseboxModule,Get-LicenseboxStatus,Connect-Licensebox,Disconnect-Licensebox,Get-LicenseboxModule,Get-LicenseboxRequest,Request-LicenseboxAccess,Get-LicenseboxAccessLink,Add-LicenseboxUsage,Close-LicenseboxClient,Get-LicenseboxBinding,ConvertTo-LicenseboxBinding,Test-LicenseboxLease
