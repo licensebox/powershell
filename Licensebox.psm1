@@ -1,10 +1,10 @@
 Set-StrictMode -Version Latest
 if (-not ('Licensebox.PowerShellNative.Client' -as [type])) { Add-Type -Path (Join-Path $PSScriptRoot src/Native.cs) }
 function New-LicenseboxClient {
- [CmdletBinding()]param([Parameter(Mandatory)][AllowEmptyString()][string]$Product,[Parameter(Mandatory)][System.Collections.IDictionary]$Keys,[string]$Version='',[string]$Server,[string]$Directory,[string]$CaBundle,[Func[double]]$Clock,[Func[string]]$MachineBinding,[Action[string,string]]$OnSignIn,[Func[bool]]$Cancelled)
+ [CmdletBinding()]param([Parameter(Mandatory)][AllowEmptyString()][string]$Product,[Parameter(Mandatory)][System.Collections.IDictionary]$Keys,[string]$Version='',[string]$Server,[string]$Directory,[string]$CaBundle,[string]$EnrolToken,[Func[double]]$Clock,[Func[string]]$MachineBinding,[Action[string,string]]$OnSignIn,[Func[bool]]$Cancelled)
  $trusted=[System.Collections.Generic.Dictionary[string,string]]::new();foreach($k in $Keys.Keys){$trusted.Add([string]$k,[string]$Keys[$k])}
  $cfg=[Licensebox.PowerShellNative.Config]::new($Product,$trusted);$cfg.Version=$Version
- if($PSBoundParameters.ContainsKey('Server')){$cfg.Server=$Server};if($PSBoundParameters.ContainsKey('Directory')){$cfg.Directory=$Directory};if($PSBoundParameters.ContainsKey('CaBundle')){$cfg.CaBundle=$CaBundle}
+ if($PSBoundParameters.ContainsKey('Server')){$cfg.Server=$Server};if($PSBoundParameters.ContainsKey('Directory')){$cfg.Directory=$Directory};if($PSBoundParameters.ContainsKey('CaBundle')){$cfg.CaBundle=$CaBundle};if($PSBoundParameters.ContainsKey('EnrolToken')){$cfg.EnrolToken=$EnrolToken}
  $cfg.Clock=$Clock;$cfg.MachineBinding=$MachineBinding;$cfg.OnSignIn=$OnSignIn;$cfg.Cancelled=$Cancelled
  [Licensebox.PowerShellNative.Client]::new($cfg)
 }
@@ -20,10 +20,15 @@ function Get-LicenseboxRequest {param([Parameter(Mandatory)]$Client);Convert-Lic
 function Request-LicenseboxAccess {param([Parameter(Mandatory)]$Client,[Parameter(Mandatory)][string[]]$Modules,[string]$Note='');Convert-LicenseboxValue $Client.RequestAccess($Modules,$Note)}
 function Get-LicenseboxAccessLink {param([Parameter(Mandatory)]$Client);$Client.AccessLink()}
 function Add-LicenseboxUsage {param([Parameter(Mandatory)]$Client,[Parameter(Mandatory)][AllowEmptyString()][string]$Command,[Parameter(Mandatory)][bool]$Success,[Parameter(Mandatory)][double]$Elapsed);$Client.Record($Command,$Success,$Elapsed)}
+# Service accounts and floating copies: Assert-LicenseboxModule checks a floating
+# module out by itself; -EnrolToken (else LICENSEBOX_ENROL_TOKEN) enrols on first lease.
+function Register-LicenseboxMachine {param([Parameter(Mandatory)]$Client,[Parameter(Mandatory)][AllowEmptyString()][string]$Token);Convert-LicenseboxValue $Client.Enrol($Token)}
+function Lock-LicenseboxCopy {param([Parameter(Mandatory)]$Client,[Parameter(Mandatory)][AllowEmptyString()][string]$Module);Convert-LicenseboxValue $Client.Checkout($Module)}
+function Unlock-LicenseboxCopy {param([Parameter(Mandatory)]$Client,[string[]]$Modules=@());$Client.Checkin($Modules)}
 function Close-LicenseboxClient {param([Parameter(Mandatory)]$Client);$Client.Dispose()}
 function Get-LicenseboxBinding {param([Parameter(Mandatory)][AllowEmptyString()][string]$Product);[Licensebox.PowerShellNative.Client]::NativeBinding($Product)}
 function ConvertTo-LicenseboxBinding {param([Parameter(Mandatory)][AllowEmptyString()][string]$Product,[Parameter(Mandatory)][AllowEmptyString()][string]$Source,[Parameter(Mandatory)][AllowEmptyString()][string]$RawId);[Licensebox.PowerShellNative.Client]::DeriveBinding($Product,$Source,$RawId)}
 function Test-LicenseboxLease {param([Parameter(Mandatory)][AllowEmptyString()][string]$Token,[Parameter(Mandatory)][AllowEmptyString()][string]$Product,[Parameter(Mandatory)][System.Collections.IDictionary]$Keys,[Parameter(Mandatory)][double]$Now)
  $trusted=[System.Collections.Generic.Dictionary[string,string]]::new();foreach($k in $Keys.Keys){$trusted.Add([string]$k,[string]$Keys[$k])};Convert-LicenseboxValue ([Licensebox.PowerShellNative.Client]::VerifyLease($Token,$Product,$trusted,$Now))
 }
-Export-ModuleMember -Function Invoke-LicenseboxHeartbeat,New-LicenseboxClient,Get-LicenseboxLease,Assert-LicenseboxModule,Get-LicenseboxStatus,Connect-Licensebox,Disconnect-Licensebox,Get-LicenseboxModule,Get-LicenseboxRequest,Request-LicenseboxAccess,Get-LicenseboxAccessLink,Add-LicenseboxUsage,Close-LicenseboxClient,Get-LicenseboxBinding,ConvertTo-LicenseboxBinding,Test-LicenseboxLease
+Export-ModuleMember -Function Invoke-LicenseboxHeartbeat,New-LicenseboxClient,Get-LicenseboxLease,Assert-LicenseboxModule,Get-LicenseboxStatus,Connect-Licensebox,Disconnect-Licensebox,Get-LicenseboxModule,Get-LicenseboxRequest,Request-LicenseboxAccess,Get-LicenseboxAccessLink,Add-LicenseboxUsage,Close-LicenseboxClient,Get-LicenseboxBinding,ConvertTo-LicenseboxBinding,Test-LicenseboxLease,Register-LicenseboxMachine,Lock-LicenseboxCopy,Unlock-LicenseboxCopy

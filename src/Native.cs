@@ -21,6 +21,8 @@ public sealed class Config(string product,IReadOnlyDictionary<string,string> key
     public string? Server { get; set; }
     public string? Directory { get; set; }
     public string? CaBundle { get; set; }
+    /// A service account's one-time enrolment token; null reads LICENSEBOX_ENROL_TOKEN.
+    public string? EnrolToken { get; set; }
     public Action<string,string>? OnSignIn { get; set; }
     public Func<bool>? Cancelled { get; set; }
     /// Trusted platform/test seams. Never accept a binding from an end user.
@@ -90,6 +92,7 @@ public class Client : IDisposable
         if(cfg.Server is {} server) options["server"]=Argument(server);
         if(cfg.Directory is {} directory)options["directory"]=Argument(directory);
         if(cfg.CaBundle is {} caBundle)options["ca_bundle"]=Argument(caBundle);
+        if(cfg.EnrolToken is {} token)options["enrol_token"]=Argument(token);
         state=new State(cfg);var callbacks=state.Callbacks;
         int result=Native.lb_client_create_json(JsonSerializer.Serialize(options),ref callbacks,out handle);
         GC.KeepAlive(state);
@@ -143,6 +146,9 @@ public class Client : IDisposable
     public JsonElement Modules()=>Call("modules");
     public JsonElement Requests()=>Call("requests");
     public JsonElement RequestAccess(IEnumerable<string> modules,string note="")=>Call("request",new{modules=modules.Select(Argument).ToArray(),note=Argument(note)});
+    public JsonElement Enrol(string token)=>Call("enrol",new{token=Argument(token)});
+    public JsonElement Checkout(string module)=>Call("checkout",new{module=Argument(module)});
+    public void Checkin(IEnumerable<string> modules)=>Call("checkin",new{modules=modules.Select(Argument).ToArray()});
     public string AccessLink()=>Call("access-link").GetString()??throw new LicenseboxException("protocol_error","invalid access link");
     public void Record(string command,bool success,double elapsedSeconds) {if(!double.IsFinite(elapsedSeconds)||elapsedSeconds<0)throw new ArgumentException("invalid elapsed time");Call("record",new{command=Argument(command),success,elapsed=elapsedSeconds});}
     public void Dispose(){lock(mutex){if(busy)throw new InvalidOperationException("callbacks must not reenter the client");if(handle!=IntPtr.Zero){Native.lb_client_destroy(handle);handle=IntPtr.Zero;}GC.SuppressFinalize(this);}}

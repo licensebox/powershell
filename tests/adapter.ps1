@@ -9,7 +9,7 @@ function Run-Adapter {
  }
  $clockValue=[double]$r.now;$bindingValue=[string]$r.binding
  $clock={return $clockValue}.GetNewClosure();$binding={return $bindingValue}.GetNewClosure()
- $extra=@{};if($r.ContainsKey('ca_bundle')){$extra['CaBundle']=$r.ca_bundle}
+ $extra=@{};if($r.ContainsKey('ca_bundle')){$extra['CaBundle']=$r.ca_bundle};if($r.ContainsKey('enrol_token')){$extra['EnrolToken']=$r.enrol_token}
  $c=New-LicenseboxClient -Product $r.product -Keys $r.keys -Version conformance -Server $r.server -Directory $r.directory -Clock $clock -MachineBinding $binding -OnSignIn {param($u,$code)} @extra
  try {
   switch($r.op){
@@ -26,6 +26,9 @@ function Run-Adapter {
    requests {Get-LicenseboxRequest $c}
    request {Request-LicenseboxAccess $c @('export') 'café – test'}
    access-link {Get-LicenseboxAccessLink $c}
+   enrol {Register-LicenseboxMachine $c $r.token}
+   checkout {Lock-LicenseboxCopy $c $r.module}
+   checkin {Unlock-LicenseboxCopy $c @($r.module);return $null}
    record {Add-LicenseboxUsage $c export $true .125;Add-LicenseboxUsage $c export $false .025;return $null}
   }
  } finally {Close-LicenseboxClient $c}
